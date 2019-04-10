@@ -7,54 +7,6 @@ import talib as ta
 
 
 #%%
-filename = 'data/EURUSD_M1.csv'
-df = pd.read_csv(filename, names=['Date', 'Time', 'Open', 'High', 'Low', 'Close', 'Volume'])
-df['Datetime'] = pd.to_datetime(df.Date + ' ' + df.Time)
-df = df.drop(['Date', 'Time'], axis=1)
-df = df.set_index('Datetime')
-df = df.dropna()
-
-df['Target'] = np.where(df.Close.shift(-1) > df.Close, 1, 0)
-
-
-#%%
-df.head()
-
-
-#%%
-# Data 3
-path = '/Users/ballmdr/data'
-filename = 'data/EURUSD_M1.csv'
-df = pd.read_csv(path + '/' + filename, names=['Date', 'Time', 'Open', 'High', 'Low', 'Close', 'Volume'])
-df['Datetime'] = pd.to_datetime(df.Date + ' ' + df.Time)
-df = df.drop(['Date', 'Time'], axis=1)
-df = df.set_index('Datetime')
-df = df.dropna()
-
-df['Target'] = np.where(df.Close.shift(-1) > df.Close, 1, 0)
-
-#%%
-df['ADX'] = ta.ADX(df.High, df.Low, df.Close, timeperiod=14)
-df['CCI'] = ta.CCI(df.High, df.Low, df.Close, timeperiod=14)
-df['MOM'] = ta.MOM(df.Close, timeperiod=10)
-df['RSI'] = ta.RSI(df.Close, timeperiod=14)
-df['Linear_regression'] = ta.LINEARREG(df.Close, timeperiod=14)
-df['Linear_angle'] = ta.LINEARREG_ANGLE(df.Close, timeperiod=14)
-df['Linear_slope'] = ta.LINEARREG_SLOPE(df.Close, timeperiod=14)
-df['Linear_intercept'] = ta.LINEARREG_INTERCEPT(df.Close, timeperiod=14)
-
-# features
-df['Returns'] = np.log(df.Close/df.Close.shift(1))
-df['ADX_diff'] = df.ADX.diff()
-df['CCI_diff'] = df.CCI.diff()
-df['MOM_diff'] = df.MOM.diff()
-df['RSI_diff'] = df.RSI.diff()
-df['Linear_regression_diff'] = df.Linear_regression.diff()
-df['Linear_angle_diff'] = df.Linear_angle.diff()
-df['Linear_slope_diff'] = df.Linear_slope.diff()
-df['Linear_intercept_diff'] = df.Linear_intercept.diff()
-
-#%%
 # Data 2
 
 filename = 'data/EURUSD_M1.csv'
