@@ -7,9 +7,9 @@ import talib as ta
 
 
 #%%
-# Data 2
+# Data 3
 
-filename = 'data/EURUSD_M1.csv'
+filename = 'data/EURUSD_H1.csv'
 df = pd.read_csv(filename, names=['Date', 'Time', 'Open', 'High', 'Low', 'Close', 'Volume'])
 df['Datetime'] = pd.to_datetime(df.Date + ' ' + df.Time)
 df = df.drop(['Date', 'Time'], axis=1)
@@ -62,6 +62,14 @@ drop_cols = drop_cols + drop_cols_2 + drop_cols_3
 
 df = df.drop(drop_cols, axis=1)
 
+
+#%%
+X = df.drop('Target', axis=1).values
+
+#%%
+from sklearn.preprocessing import StandardScaler, MinMaxScaler
+X_scaled = StandardScaler().fit_transform(X)
+X_minmax = MinMaxScaler().fit_transform(X)
 
 #%%
 df.to_csv('data/data3_M1.csv')
