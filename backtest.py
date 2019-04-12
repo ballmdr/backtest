@@ -49,6 +49,7 @@ class MlStrategy(bt.Strategy):
         if self.stats.broker.value[0] < 600.0:
            print('WHITE FLAG ... I LOST TOO MUCH')
            sys.exit()
+        self.log('Cash: %.2f' % self.stats.broker.value[0])
         self.log('DrawDown: %.2f' % self.stats.drawdown.drawdown[-1])
         self.log('MaxDrawDown: %.2f' % self.stats.drawdown.maxdrawdown[-1])
         #self.log('Close, %.2f' % self.dataclose[0])
@@ -86,7 +87,7 @@ class MlStrategy(bt.Strategy):
         #print(predict_arr)
         y_pred = model.predict(predict_arr)
         #print(y_pred)
-        if y_pred >= 0.5:
+        if y_pred == 1:
             y_pred = True
         else:
             y_pred = False
@@ -209,9 +210,9 @@ if __name__ == '__main__':
 
     #print(df.isnull().sum())
 
-    #with open('pickle/EURUSD_dec_final_data3_h1.pickle', 'rb') as file:
-    #    model = pickle.load(file)
-    model = load_model('h5/model2_data3_12042019_0746.h5')
+    with open('pickle/EURUSD_dec_final_data3_h1.pickle', 'rb') as file:
+        model = pickle.load(file)
+    #model = load_model('h5/model2_data3_12042019_0746.h5')
 
     data = bt.feeds.PandasData(dataname=df, timeframe=bt.TimeFrame.Minutes, openinterest=None)
 
@@ -220,6 +221,7 @@ if __name__ == '__main__':
     cerebro.broker.setcommission()
     #cerebro.adddata(data)
     cerebro.resampledata(data, timeframe=bt.TimeFrame.Minutes, compression=30)
+
     
     cerebro.addstrategy(MlStrategy)
     start_cash = 1000.0
@@ -257,10 +259,9 @@ if __name__ == '__main__':
     printTradeAnalysis(tradeanalyzer)
     printSQN(sqn)
 
+    start_cash = cerebro.broker.getvalue()
+    print('Starting Port: %.2f' % start_cash)
     print('Final Port: %.2f' % cerebro.broker.getvalue())
-    pl =  cerebro.broker.get_value()- start_cash
-
-    print('pl: %.2f' % pl)
 
     #cerebro.plot()
     #bo = Bokeh()
