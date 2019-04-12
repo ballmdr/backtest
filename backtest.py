@@ -46,7 +46,7 @@ class MlStrategy(bt.Strategy):
 
 
     def next(self):
-        if self.stats.broker.value[0] < 500.0:
+        if self.stats.broker.value[0] < 600.0:
            print('WHITE FLAG ... I LOST TOO MUCH')
            sys.exit()
         self.log('DrawDown: %.2f' % self.stats.drawdown.drawdown[-1])
@@ -82,7 +82,7 @@ class MlStrategy(bt.Strategy):
             self.Linear_intercept[0] - self.Linear_intercept[-1]
         ])
         #print(predict_arr)
-        predict_arr = MinMaxScaler().fit_transform(predict_arr.values).reshape(1,-1)
+        predict_arr = StandardScaler().fit_transform(predict_arr.values).reshape(1,-1)
         #print(predict_arr)
         y_pred = model.predict(predict_arr)
         #print(y_pred)
@@ -219,7 +219,7 @@ if __name__ == '__main__':
 
     cerebro.broker.setcommission()
     #cerebro.adddata(data)
-    cerebro.resampledata(data, timeframe=bt.TimeFrame.Minutes, compression=5)
+    cerebro.resampledata(data, timeframe=bt.TimeFrame.Minutes, compression=30)
     
     cerebro.addstrategy(MlStrategy)
     start_cash = 1000.0
