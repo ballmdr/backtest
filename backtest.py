@@ -6,10 +6,12 @@ import backtrader.indicators as btind
 from datetime import datetime, date
 import pandas as pd
 import numpy as np
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler, StandardScaler
 import pickle
 from backtrader_plotting import Bokeh
 from backtrader_plotting.schemes import Tradimo
+
+from keras.models import load_model
 
 import sys
 
@@ -84,25 +86,29 @@ class MlStrategy(bt.Strategy):
         #print(predict_arr)
         y_pred = model.predict(predict_arr)
         #print(y_pred)
+        if y_pred >= 0.5:
+            y_pred = True
+        else:
+            y_pred = False
         if not self.position:
-            if y_pred == 1:
+            if y_pred == True:
                 # BUY, BUY, BUY!!! (with default parameters)
                 self.log('BUY CREATE, %.5f' % self.dataclose[0])
                 self.order = self.buy(size=self.p.size)
                 self.direction = 'long'
-            elif y_pred == 0:
+            elif y_pred == False:
                 # SELL, SELL, SELL!!! (with all possible default parameters)
                 self.log('SELL CREATE, %.5f' % self.dataclose[0])
                 # Keep track of the created order to avoid a 2nd order
                 self.order = self.sell(size=self.p.size)
                 self.direction = 'short'
         else: #close order
-            if y_pred == 1 and self.direction == 'short':
+            if y_pred == True and self.direction == 'short':
                 #close short order
                 self.log('Close Order, %.5f' % self.dataclose[0])
                 self.order = self.close()
                 self.direction = None
-            elif y_pred == 0 and self.direction == 'long':
+            elif y_pred == False and self.direction == 'long':
                 #close long order
                 self.log('Close Order, %.5f' % self.dataclose[0])
                 self.order = self.close()
@@ -155,6 +161,41 @@ def clean_dataset(df):
     indices_to_keep = ~df.isin([np.nan, np.inf, -np.inf]).any(1)
     return df[indices_to_keep].astype(np.float64)
 
+def printTradeAnalysis(analyzer):
+    '''
+    Function to print the Technical Analysis results in a nice format.
+    '''
+    #Get the results we are interested in
+    total_open = analyzer.total.open
+    total_closed = analyzer.total.closed
+    total_won = analyzer.won.total
+    total_lost = analyzer.lost.total
+    win_streak = analyzer.streak.won.longest
+    lose_streak = analyzer.streak.lost.longest
+    pnl_net = round(analyzer.pnl.net.total,2)
+    strike_rate = round((total_won / total_closed) * 100, 2)
+    #Designate the rows
+    h1 = ['Total Open', 'Total Closed', 'Total Won', 'Total Lost']
+    h2 = ['Strike Rate','Win Streak', 'Losing Streak', 'PnL Net']
+    r1 = [total_open, total_closed,total_won,total_lost]
+    r2 = [strike_rate, win_streak, lose_streak, pnl_net]
+    #Check which set of headers is the longest.
+    if len(h1) > len(h2):
+        header_length = len(h1)
+    else:
+        header_length = len(h2)
+    #Print the rows
+    print_list = [h1,r1,h2,r2]
+    row_format ="{:<15}" * (header_length + 1)
+    print("Trade Analysis Results:")
+    for row in print_list:
+        print(row_format.format('',*row))
+
+def printSQN(analyzer):
+    sqn = round(analyzer.sqn,2)
+    print('SQN: {}'.format(sqn))
+
+
 if __name__ == '__main__':
     df = pd.read_csv('data/EURUSD_M1.csv', names=['Date', 'Time', 'Open', 'High', 'Low', 'Close', 'Volume'])
     df['Datetime'] = pd.to_datetime(df.Date + ' ' + df.Time)
@@ -168,16 +209,17 @@ if __name__ == '__main__':
 
     #print(df.isnull().sum())
 
-    with open('pickle/EURUSD_dec_final_data3_h1.pickle', 'rb') as file:
-        model = pickle.load(file)
+    #with open('pickle/EURUSD_dec_final_data3_h1.pickle', 'rb') as file:
+    #    model = pickle.load(file)
+    model = load_model('h5/model2_data3_12042019_0746.h5')
 
     data = bt.feeds.PandasData(dataname=df, timeframe=bt.TimeFrame.Minutes, openinterest=None)
 
     cerebro = bt.Cerebro(stdstats=False)
 
     cerebro.broker.setcommission()
-    cerebro.adddata(data)
-    #cerebro.resampledata(data, timeframe=bt.TimeFrame.Minutes, compression=60)
+    #cerebro.adddata(data)
+    cerebro.resampledata(data, timeframe=bt.TimeFrame.Minutes, compression=5)
     
     cerebro.addstrategy(MlStrategy)
     start_cash = 1000.0
@@ -198,16 +240,28 @@ if __name__ == '__main__':
     
     results = cerebro.run()
     strat = results[0]
+
+    
     #print('return {}'.format(strat.analyzers.returns.get_analysis()))
-    print("Drawdown", strat.analyzers.drawdown.get_analysis())
-    print('Sharp Ratio ', strat.analyzers.sharperatio.get_analysis())
-    print('SQN ', strat.analyzers.sqn.get_analysis())
-    print('Trade Analyzer ', strat.analyzers.tradeanalyzer.get_analysis())
+    drawdown = strat.analyzers.drawdown.get_analysis()
+    sharpratio = strat.analyzers.sharperatio.get_analysis()
+    sqn = strat.analyzers.sqn.get_analysis()
+    tradeanalyzer = pd.DataFrame(strat.analyzers.tradeanalyzer.get_analysis())
+    print('Sharp Ratio ', )
+    print('SQN ', )
+    
+    tradeanalyzer.to_csv('trade.csv')
+    print("Drawdown: ", drawdown['max']['drawdown'], ' $', drawdown['max']['moneydown'])
+    print("Sharp Ratio: ", sharpratio['sharperatio'])
+
+    printTradeAnalysis(tradeanalyzer)
+    printSQN(sqn)
 
     print('Final Port: %.2f' % cerebro.broker.getvalue())
-    pl = start_cash - cerebro.broker.get_value()
+    pl =  cerebro.broker.get_value()- start_cash
+
     print('pl: %.2f' % pl)
 
-    cerebro.plot()
-    bo = Bokeh()
-    bo.plot_result(results)
+    #cerebro.plot()
+    #bo = Bokeh()
+    #bo.plot_result(results)
