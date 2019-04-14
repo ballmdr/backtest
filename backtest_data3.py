@@ -1,4 +1,4 @@
-#DATA2
+
 
 import backtrader as bt
 import backtrader.indicators as btind
@@ -18,7 +18,7 @@ import sys
 
 class MlStrategy(bt.Strategy):
 
-    params = (('size', 1000), ('pre_method', MinMaxScaler()))
+    params = (('size', 1000),)
 
     def __init__(self):
         # Keep a reference to the "close" line in the data[0] dataseries
@@ -46,7 +46,7 @@ class MlStrategy(bt.Strategy):
 
 
     def next(self):
-        if self.stats.broker.value[0] < 600.0:
+        if self.stats.drawdown.drawdown[-1] > 40.0:
            print('WHITE FLAG ... I LOST TOO MUCH')
            sys.exit()
         self.log('Cash: %.2f' % self.stats.broker.value[0])
@@ -83,11 +83,11 @@ class MlStrategy(bt.Strategy):
             self.Linear_intercept[0] - self.Linear_intercept[-1]
         ])
         #print(predict_arr)
-        predict_arr = self.p.pre_method.fit_transform(predict_arr.values).reshape(1,-1)
+        predict_arr = MinMaxScaler().fit_transform(predict_arr.values).reshape(1,-1)
         #print(predict_arr)
         y_pred = model.predict(predict_arr)
         #print(y_pred)
-        if y_pred > 0.5:
+        if y_pred == 1:
             y_pred = True
         else:
             y_pred = False
@@ -210,18 +210,17 @@ if __name__ == '__main__':
 
     #print(df.isnull().sum())
 
-    #with open('pickle/voting_clf_data2_M5_minmax.pickle', 'rb') as file:
-    #    model = pickle.load(file)
-    model = load_model('../backtest_old/h5/model4_data3_M1_nosplit_minmax_new.h5')
+    with open('pickle/EURUSD_dec_final_data3_h1.pickle', 'rb') as file:
+        model = pickle.load(file)
+    #model = load_model('h5/model2_data3_12042019_0746.h5')
 
     data = bt.feeds.PandasData(dataname=df, timeframe=bt.TimeFrame.Minutes, openinterest=None)
 
     cerebro = bt.Cerebro(stdstats=False)
 
     cerebro.broker.setcommission()
-    cerebro.adddata(data)
-    #cerebro.resampledata(data, timeframe=bt.TimeFrame.Minutes, compression=5)
-
+    #cerebro.adddata(data)
+    cerebro.resampledata(data, timeframe=bt.TimeFrame.Minutes, compression=5)
     
     cerebro.addstrategy(MlStrategy)
     start_cash = 1000.0
@@ -248,8 +247,11 @@ if __name__ == '__main__':
     drawdown = strat.analyzers.drawdown.get_analysis()
     sharpratio = strat.analyzers.sharperatio.get_analysis()
     sqn = strat.analyzers.sqn.get_analysis()
-    tradeanalyzer = strat.analyzers.tradeanalyzer.get_analysis()
-
+    tradeanalyzer = pd.DataFrame(strat.analyzers.tradeanalyzer.get_analysis())
+    print('Sharp Ratio ', )
+    print('SQN ', )
+    
+    tradeanalyzer.to_csv('trade.csv')
     print("Drawdown: ", drawdown['max']['drawdown'], ' $', drawdown['max']['moneydown'])
     print("Sharp Ratio: ", sharpratio['sharperatio'])
 

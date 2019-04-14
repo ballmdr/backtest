@@ -1,5 +1,46 @@
 
 #%%
+def make_model(dense_layers, activation, dropout):
+    '''Creates a multi-layer perceptron model
+    
+    dense_layers: List of layer sizes; one number per layer
+    '''
+
+    model = Sequential()
+    for i, layer_size in enumerate(dense_layers, 1):
+        if i == 1:
+            model.add(Dense(layer_size, input_dim=X.shape[1]))
+            model.add(Activation(activation))
+        else:
+            model.add(Dense(layer_size))
+            model.add(Activation(activation))
+    model.add(Dropout(dropout))
+    model.add(Dense(1))
+    model.add(Activation('sigmoid'))
+
+    model.compile(loss='binary_crossentropy',
+                  optimizer='Adam',
+                  metrics=['binary_accuracy', auc_roc])
+
+    return model
+
+def auc_roc(y_true, y_pred):
+    # any tensorflow metric
+    value, update_op = tf.metrics.auc(y_true, y_pred)
+
+    # find all variables created for this metric
+    metric_vars = [i for i in tf.local_variables() if 'auc_roc' in i.name.split('/')[1]]
+
+    # Add metric variables to GLOBAL_VARIABLES collection.
+    # They will be initialized for new session.
+    for v in metric_vars:
+        tf.add_to_collection(tf.GraphKeys.GLOBAL_VARIABLES, v)
+
+    # force to update metric values
+    with tf.control_dependencies([update_op]):
+        value = tf.identity(value)
+        return value
+
 def return_plot(estimator, plot=False):
     df['Predicted_Signal'] = estimator.predict(X)
     df.Predicted_Signal[df.Predicted_Signal > 0.5] = 1
@@ -65,7 +106,7 @@ from sklearn.metrics import classification_report, accuracy_score, confusion_mat
 
 
 #%%
-df = pd.read_csv('data/data3_M1.csv', parse_dates=['Datetime'], index_col='Datetime')
+df = pd.read_csv('data/data3/data3_M1.csv', parse_dates=['Datetime'], index_col='Datetime')
 
 
 
@@ -73,13 +114,19 @@ df = pd.read_csv('data/data3_M1.csv', parse_dates=['Datetime'], index_col='Datet
 X = df.drop('Target', axis=1).values
 y = df.Target.values
 
-# split = int(len(df) * 0.60)
-# X_train = X[:split]
-# X_test = X[split:]
-# y_train = y[:split]
-# y_test = y[split:]
+split = int(len(df) * 0.60)
+X_train = X[:split]
+X_tmp = X[split:]
+y_train = y[:split]
+y_tmp = y[split:]
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.60, random_state=42)
+half_split = int(len(X_tmp)*0.50)
+X_test = X_tmp[:half_split]
+X_final = X_tmp[half_split:]
+y_test = y_tmp[:half_split]
+y_final = y_tmp[half_split:]
+
+#X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.40, random_state=42)
 
 
 #%%
@@ -89,19 +136,20 @@ X_test = scaler.transform(X_test)
 
 
 #%%
-early_stop = EarlyStopping(patience=5, monitor='acc')
-sgd = SGD(lr=0.001, decay=1e-6, momentum=0.9, nesterov=True)
-ada = Adagrad(lr=0.01, epsilon=None, decay=0.0)
-adam = Adam(lr=0.0001, beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
-
+minmax = MinMaxScaler()
+X_train = minmax.fit_transform(X_train)
+X_tmp = minmax.transform(X_tmp)
 
 #%%
-model = Sequential()
-model.add(Dense(64, activation='relu', input_shape=(X.shape[1],)))
-model.add(Dense(64, activation='relu'))
-model.add(Dropout(.5))
-model.add(Dense(1, activation='sigmoid'))
-model.compile(optimizer=adam, loss='binary_crossentropy', metrics=['accuracy'])
-model.fit(X_train, y_train, epochs=30, batch_size=128, validation_split=0.3, callbacks=[early_stop], verbose=True)
+param_grid = {'dense_layers': [[32], [32, 32], [64], [64, 64], [64, 64, 32], [64, 32], [128]],
+              'activation'  : ['relu', 'tanh'],
+              'dropout'     : [.25, .5, .75],
+              }
 
-model.save('keras.h5')
+clf = KerasClassifier(make_model, verbose=True)
+grid_cv = GridSearchCV(clf, param_grid, cv=3, n_jobs=-1, verbose=True)
+early_stop = EarlyStopping(monitor='auc_roc', patience=10, verbose=1)
+
+grid_cv.fit(X_train, y_train, callbacks=[early_stop], verbose=True, epohs=50)
+print('\nBest Score: {:.2%}'.format(grid_cv.best_score_))
+print('\nBest Params:\n', pd.Series(grid_cv.best_params_))
