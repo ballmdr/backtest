@@ -1,0 +1,14 @@
+,total,streak,pnl,won,lost,long,short,len
+average,,,,,,,,5.170723894939141
+closed,6244.0,,,,,,,
+gross,,,"AutoOrderedDict([('total', -161.3099999999829), ('average', -0.025834401024981246)])",,,,,
+long,,,,,,,,"AutoOrderedDict([('total', 14096), ('average', 4.217833632555356), ('max', 38), ('min', 1), ('won', AutoOrderedDict([('total', 8661), ('average', 7.128395061728395), ('max', 38), ('min', 1)])), ('lost', AutoOrderedDict([('total', 5435), ('average', 2.555242125058768), ('max', 16), ('min', 1)]))])"
+lost,,"AutoOrderedDict([('current', 2), ('longest', 19)])",,,,2127,1937,"AutoOrderedDict([('total', 12546), ('average', 3.0871062992125986), ('max', 19), ('min', 1)])"
+max,,,,,,,,64
+min,,,,,,,,1
+net,,,"AutoOrderedDict([('total', -161.3099999999829), ('average', -0.025834401024981246)])",,,,,
+open,1.0,,,,,,,
+pnl,,,,"AutoOrderedDict([('total', 3069.8600000000033), ('average', 1.4081926605504602), ('max', 19.400000000000084)])","AutoOrderedDict([('total', -3231.1700000000005), ('average', -0.7950713582677167), ('max', -19.71999999999996)])","AutoOrderedDict([('total', -56.20999999999241), ('average', -0.01681926989826224), ('won', AutoOrderedDict([('total', 1498.5300000000009), ('average', 1.2333580246913587), ('max', 15.469999999999873)])), ('lost', AutoOrderedDict([('total', -1554.739999999989), ('average', -0.7309543958627123), ('max', -10.619999999999852)]))])","AutoOrderedDict([('total', -105.09999999999037), ('average', -0.036216402481044234), ('won', AutoOrderedDict([('total', 1571.330000000001), ('average', 1.6283212435233172), ('max', 19.400000000000084)])), ('lost', AutoOrderedDict([('total', -1676.4299999999844), ('average', -0.8654775425916285), ('max', -19.71999999999996)]))])",
+short,,,,,,,,"AutoOrderedDict([('total', 18190), ('average', 6.268090971743625), ('max', 64), ('min', 1), ('won', AutoOrderedDict([('total', 11079), ('average', 11.48082901554404), ('max', 64), ('min', 1)])), ('lost', AutoOrderedDict([('total', 7111), ('average', 3.6711409395973154), ('max', 19), ('min', 1)]))])"
+total,6245.0,,,2180,4064,3342,2902,32286
+won,,"AutoOrderedDict([('current', 0), ('longest', 8)])",,,,1215,965,"AutoOrderedDict([('total', 19740), ('average', 9.055045871559633), ('max', 64), ('min', 1)])"

@@ -9,7 +9,7 @@ import talib as ta
 #%%
 # Data 3
 
-filename = 'data/EURUSD_H1.csv'
+filename = 'data/EURUSD_D1.csv'
 df = pd.read_csv(filename, names=['Date', 'Time', 'Open', 'High', 'Low', 'Close', 'Volume'])
 df['Datetime'] = pd.to_datetime(df.Date + ' ' + df.Time)
 df = df.drop(['Date', 'Time'], axis=1)
@@ -72,7 +72,7 @@ X_scaled = StandardScaler().fit_transform(X)
 X_minmax = MinMaxScaler().fit_transform(X)
 
 #%%
-df.to_csv('data/data3_M1.csv')
+df.to_csv('data/data3_D1.csv')
 
 
 

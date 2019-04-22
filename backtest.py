@@ -18,7 +18,7 @@ import sys
 
 class MlStrategy(bt.Strategy):
 
-    params = (('size', 1000), ('pre_method', MinMaxScaler()))
+    params = (('size', 1000), ('pre_method', StandardScaler()))
 
     def __init__(self):
         # Keep a reference to the "close" line in the data[0] dataseries
@@ -212,7 +212,7 @@ if __name__ == '__main__':
 
     #with open('pickle/voting_clf_data2_M5_minmax.pickle', 'rb') as file:
     #    model = pickle.load(file)
-    model = load_model('../backtest_old/h5/model4_data3_M1_nosplit_minmax_new.h5')
+    model = load_model('h5/pass/deep_sharpe1.26_data3_M1_split42_standard.h5')
 
     data = bt.feeds.PandasData(dataname=df, timeframe=bt.TimeFrame.Minutes, openinterest=None)
 

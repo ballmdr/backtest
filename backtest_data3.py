@@ -7,11 +7,13 @@ from datetime import datetime, date
 import pandas as pd
 import numpy as np
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
+from sklearn.decomposition import PCA
 import pickle
 from backtrader_plotting import Bokeh
 from backtrader_plotting.schemes import Tradimo
 
 from keras.models import load_model
+import tensorflow as tf 
 
 import sys
 
@@ -46,7 +48,7 @@ class MlStrategy(bt.Strategy):
 
 
     def next(self):
-        if self.stats.drawdown.drawdown[-1] > 40.0:
+        if self.stats.drawdown.drawdown[-1] > 10.0:
            print('WHITE FLAG ... I LOST TOO MUCH')
            sys.exit()
         self.log('Cash: %.2f' % self.stats.broker.value[0])
@@ -84,6 +86,7 @@ class MlStrategy(bt.Strategy):
         ])
         #print(predict_arr)
         predict_arr = MinMaxScaler().fit_transform(predict_arr.values).reshape(1,-1)
+        predict_arr = pca.transform(predict_arr)
         #print(predict_arr)
         y_pred = model.predict(predict_arr)
         #print(y_pred)
@@ -108,12 +111,17 @@ class MlStrategy(bt.Strategy):
                 #close short order
                 self.log('Close Order, %.5f' % self.dataclose[0])
                 self.order = self.close()
-                self.direction = None
+                self.log('BUY CREATE, %.5f' % self.dataclose[0])
+                self.order = self.buy(size=self.p.size)
+                self.direction = 'long'
             elif y_pred == False and self.direction == 'long':
                 #close long order
                 self.log('Close Order, %.5f' % self.dataclose[0])
                 self.order = self.close()
-                self.direction = None
+                self.log('SELL CREATE, %.5f' % self.dataclose[0])
+                # Keep track of the created order to avoid a 2nd order
+                self.order = self.sell(size=self.p.size)
+                self.direction = 'short'
 
 
     def notify_order(self, order):
@@ -198,6 +206,8 @@ def printSQN(analyzer):
 
 
 if __name__ == '__main__':
+
+    
     df = pd.read_csv('data/EURUSD_M1.csv', names=['Date', 'Time', 'Open', 'High', 'Low', 'Close', 'Volume'])
     df['Datetime'] = pd.to_datetime(df.Date + ' ' + df.Time)
     df = df.set_index('Datetime')
@@ -210,15 +220,18 @@ if __name__ == '__main__':
 
     #print(df.isnull().sum())
 
-    with open('pickle/EURUSD_dec_final_data3_h1.pickle', 'rb') as file:
+    with open('knn_test_data3_m5.pickle', 'rb') as file:
         model = pickle.load(file)
-    #model = load_model('h5/model2_data3_12042019_0746.h5')
+
+    with open('pca.pickle', 'rb') as file:
+        pca = pickle.load(file)
+
+    #model = tf.keras.models.load_model('h5/base2_data3_minmax_D1.h5')
 
     data = bt.feeds.PandasData(dataname=df, timeframe=bt.TimeFrame.Minutes, openinterest=None)
 
     cerebro = bt.Cerebro(stdstats=False)
 
-    cerebro.broker.setcommission()
     #cerebro.adddata(data)
     cerebro.resampledata(data, timeframe=bt.TimeFrame.Minutes, compression=5)
     
